@@ -1,41 +1,3 @@
-const CACHE_NAME = 'secure-box-v1';
-const OFFLINE_PAGE = '/offline.html';
-
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.add(OFFLINE_PAGE))
-    );
-    self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
-    event.waitUntil(self.clients.claim());
-});
-
-self.addEventListener('fetch', (event) => {
-    if (event.request.mode === 'navigate') {
-        event.respondWith(
-            fetch(event.request)
-                .then((response) => {
-                    console.log('Fetch succeeded:', response.url);
-                    // Check for Cloudflare Errors (530, 520, etc) or Server Errors
-                    if (!response.ok || response.status === 530 || response.status >= 500) {
-                        return caches.match(OFFLINE_PAGE).then(cachedResponse => {
-                            // If cache exists, return it. If not, return the error (better than nothing)
-                            return cachedResponse || response;
-                        });
-                    }
-                    return response;
-                })
-                .catch(() => {
-                    console.log('Fetch failed; returning offline page instead.');
-                    // Network completely dead
-                    return caches.match(OFFLINE_PAGE);
-                })
-        );
-    }
-});
-
 // Handle push notifications (for future server-side push support)
 self.addEventListener('push', (event) => {
     if (!event.data) return;
@@ -73,7 +35,7 @@ self.addEventListener('notificationclick', (event) => {
             }
             // If no window is open, open one
             if (clients.openWindow) {
-                return clients.openWindow('chat');
+                return clients.openWindow('/chat');
             }
         })
     );
